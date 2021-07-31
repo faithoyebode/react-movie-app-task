@@ -11,18 +11,17 @@ const SearchResults = () => {
     const [series, setSeries] = useState({});
     const [loadingSeries, setLoadingSeries] = useState(false);
 
-    const moviesContainerRef = useRef();
     const searchTextRef = useRef();
 
-    const handleSubmit = async (e, autoInput) => {
+    const handleSubmit = async (e) => {
 
         try {
             setError(false);
             setLoadingMovies(true);
             setLoadingSeries(true);
             const [ moviesResults, seriesResults ] = await Promise.all([
-                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e?.target?.value || autoInput}&type=movie&page=1`),
-                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e?.target?.value || autoInput}&type=series&page=1`),
+                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e.target.value}&type=movie&page=1`),
+                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e.target.value}&type=series&page=1`)
             ]);
             const [moviesData, seriesData] = [await moviesResults.json(), await seriesResults.json()];
             if(moviesData?.Response?.toLowerCase() === "false" || seriesData?.Response?.toLowerCase() === "false"){
@@ -37,13 +36,14 @@ const SearchResults = () => {
             setLoadingSeries(false);
             setMovies({});
             setSeries({});
-            setError(true);
+            setError(true);    
         }
     }
 
     const handleScroll = async (e, stateItem, setStateItem, setLoading, category) => {
-        try{
-            if( (e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
+        setError(false);
+        if((e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
+            try{
                 setLoading(true);
                 const page = stateItem.page + 1;
                 const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=${category}&page=${page}`);
@@ -51,18 +51,56 @@ const SearchResults = () => {
                 setStateItem((prevData) => ({
                     ...data,
                     page: page,
-                    Search: [...prevData.Search, ...data.Search]
+                    Search: [...prevData?.Search, ...data?.Search]
                 }));
                 setLoading(false);
+            }catch (error) {
+                setError(true);
+                setLoading(false);
             }
-        } catch (error) {
-            setLoading(false);
-        }
+        } 
     }
 
     useEffect(() => {
+        setError(false);
         searchTextRef.current.value = "game";
-        handleSubmit(null, searchTextRef.current.value)
+        let firstController = new AbortController();
+        let secondController = new AbortController();
+
+        (async () => {
+            try {
+                setLoadingMovies(true);
+                setLoadingSeries(true);
+                const [ moviesResults, seriesResults ] = await Promise.all([
+                        fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=game&type=movie&page=1`, {
+                            signal: firstController.signal
+                        }),
+                        fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=game&type=series&page=1`, {
+                            signal: secondController.signal
+                        }),
+                ]);
+                const [moviesData, seriesData] = [await moviesResults.json(), await seriesResults.json()];
+                if(moviesData?.Response?.toLowerCase() === "false" || seriesData?.Response?.toLowerCase() === "false"){
+                    throw new Error();
+                }
+                setMovies((prevData) => ({...prevData, ...moviesData, page: 1}));
+                setSeries((prevData) => ({...prevData, ...seriesData, page: 1}));
+                setLoadingMovies(false);
+                setLoadingSeries(false);
+            } catch (error) {
+                if(!firstController.signal.aborted  && !secondController.signal.aborted){
+                    setLoadingMovies(false);
+                    setLoadingSeries(false);
+                    setMovies({});
+                    setSeries({});
+                    setError(true);    
+                }
+            }
+        })()
+        return () => {
+            firstController.abort();
+            secondController.abort();
+        }
     }, []);
 
     return (
@@ -81,7 +119,6 @@ const SearchResults = () => {
                     mb="10px" 
                     overflowX="auto" 
                     overflowY="hidden" 
-                    ref={moviesContainerRef} 
                     onScroll={async (e) => {await handleScroll(e, movies, setMovies, setLoadingMovies, "movie")}}
                     className="scroll-container"
                 >
@@ -98,7 +135,7 @@ const SearchResults = () => {
                 </Flex>
             </Box>
 
-            <Box>
+            <Box mb="48px">
                 <Text mb="18px" fontFamily="DM Sans" fontSize={{base: "18px", md: "24px"}}>Series</Text>
                 <Flex 
                     w="100%" 
@@ -117,7 +154,7 @@ const SearchResults = () => {
                         ))
                     }
                     { loadingSeries && <span className="loader"></span>}
-                    { err && <Box fontSize={{base: "18px", md: "24px"}} color="red">An error occured</Box>}
+                    { err && <Text flexShrink="0" fontSize={{base: "18px", md: "24px"}} color="red">An error occured</Text>}
                 </Flex>
             </Box>
         </Box>
