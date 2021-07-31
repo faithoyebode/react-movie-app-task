@@ -1,3 +1,9 @@
+*{
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 :root{
   overflow-x: hidden;
 }
@@ -6,8 +12,9 @@ body{
   overflow-x: hidden;
 }
 
-*{
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@font-face {
+	font-family: 'DM Sans';
+	src: url("assets/fonts/DMSans-Regular.ttf") 
+        format('truetype');
+  font-weight: normal;
 }

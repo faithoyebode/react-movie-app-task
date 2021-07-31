@@ -3,9 +3,86 @@
   background: #292929;
 }
 
+.hero{
+  background-image: url('./assets/images/hero-lg.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 100%;
+  height: 550px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.hero h3{
+  font-family: DM Sans;
+  font-size: 72px;
+  margin-left: 77px;
+  width: 490px;
+  height: 282px;
+  font-weight: 700;
+}
+
+.loader {
+  border: 3px solid hsl(0deg 0% 0% / 20%);
+  border-top-color: #5C5C5C;
+  border-radius: 50%;
+  width: 3.5em;
+  height: 3.5em;
+  animation: spin 0.7s linear infinite;
+  margin: auto;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+div.movie-box:hover::after{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  z-index: 2;
+  border-radius: 12px;
+  opacity: 0.8;
+}
+
+.scroll-container{
+  scroll-snap-type: x mandatory;
+}
+
+.scroll-container > div{
+  scroll-snap-align: center;
+}
+
+@media all and (max-width: 920px){
+  .hero{
+    background-image: url('./assets/images/hero-md.jpg');
+    justify-content: center;
+  }
+  .hero h3{
+    margin-left: 0;
+    text-align: center;
+    line-height: 94px;
+    letter-spacing: -0.05em;
+  }
+}
 
 @media all and (max-width: 425px){
-  .top-bar{
-    height: 67px;
+  .hero{
+    background-image: url('./assets/images/hero-sm.jpg');
+    height: 257px;
+  }
+  .hero h3{
+    font-size: 28px;
+    width: 273px;
+    height: 72px;
+    line-height: 36px;
   }
 }
