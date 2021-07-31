@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect} from 'react';
 import { Box, Input, FormControl, FormLabel, Image, Text, Flex} from '@chakra-ui/react';
 
 const SearchResults = () => {
@@ -12,18 +12,14 @@ const SearchResults = () => {
     const moviesContainerRef = useRef();
     const searchTextRef = useRef();
 
-    useEffect(() => {
-        console.log("effect: ", movies);
-    }, [movies]);
-
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, autoInput) => {
 
         try {
             setLoadingMovies(true);
             setLoadingSeries(true);
             const [ moviesResults, seriesResults ] = await Promise.all([
-                    fetch(`http://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e.target.value}&type=movie&page=1`),
-                    fetch(`http://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e.target.value}&type=series&page=1`),
+                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e?.target?.value || autoInput}&type=movie&page=1`),
+                    fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e?.target?.value || autoInput}&type=series&page=1`),
             ]);
             const [moviesData, seriesData] = [await moviesResults.json(), await seriesResults.json()];
             setMovies((prevData) => ({...prevData, ...moviesData, page: 1}));
@@ -41,7 +37,7 @@ const SearchResults = () => {
         if( (e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
             setLoading(true);
             const page = stateItem.page + 1;
-            const response = await fetch(`http://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=movie&page=${page}`);
+            const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=movie&page=${page}`);
             const data = await response.json();
             console.log(data.Search);
             setStateItem((prevData) => ({
@@ -53,6 +49,11 @@ const SearchResults = () => {
         }
 
     }
+
+    useEffect(() => {
+        searchTextRef.current.value = "america";
+        handleSubmit(null, searchTextRef.current.value)
+    }, []);
 
     return (
         <Box py={{base: '63px'}} px={{base: '28px', md: '77px'}}>
