@@ -6,6 +6,8 @@ const SearchResults = () => {
     const [movies, setMovies] = useState({});
     const [loadingMovies, setLoadingMovies] = useState(false);
     const [err, setError] = useState(false);
+    const [moviesScrolled, setMoviesScrolled] = useState(false);
+    const [seriesScrolled, setSeriesScrolled] = useState(false);
 
 
     const [series, setSeries] = useState({});
@@ -14,7 +16,6 @@ const SearchResults = () => {
     const searchTextRef = useRef();
 
     const handleSubmit = async (e) => {
-
         try {
             setError(false);
             setLoadingMovies(true);
@@ -43,20 +44,40 @@ const SearchResults = () => {
     const handleScroll = async (e, stateItem, setStateItem, setLoading, category) => {
         setError(false);
         if((e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
-            try{
-                setLoading(true);
-                const page = stateItem.page + 1;
-                const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=${category}&page=${page}`);
-                const data = await response.json();
-                setStateItem((prevData) => ({
-                    ...data,
-                    page: page,
-                    Search: [...prevData?.Search, ...data?.Search]
-                }));
-                setLoading(false);
-            }catch (error) {
-                setError(true);
-                setLoading(false);
+            if((!moviesScrolled && category === 'movie') || (!seriesScrolled && category === 'series')){
+                try{
+                    if(category === 'movie'){
+                        setMoviesScrolled(true);
+                    }
+                    if(category === 'series'){
+                        setSeriesScrolled(true);
+                    }
+                    setLoading(true);
+                    const page = stateItem.page + 1;
+                    const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=${category}&page=${page}`);
+                    const data = await response.json();
+                    setStateItem((prevData) => ({
+                        ...data,
+                        page: page,
+                        Search: [...prevData?.Search, ...data?.Search]
+                    }));
+                    setLoading(false);
+                    if(category === 'movie'){
+                        setTimeout(() => setMoviesScrolled(false), 1000);
+                    }
+                    if(category === 'series'){
+                        setTimeout(() => setSeriesScrolled(false), 1000);
+                    }
+                }catch (error) {
+                    setError(true);
+                    setLoading(false);
+                    if(category === 'movie'){
+                        setTimeout(() => setMoviesScrolled(false), 1000);
+                    }
+                    if(category === 'series'){
+                        setTimeout(() => setMoviesScrolled(false), 1000);
+                    }
+                }
             }
         } 
     }
