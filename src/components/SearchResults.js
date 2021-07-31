@@ -5,6 +5,8 @@ const SearchResults = () => {
 
     const [movies, setMovies] = useState({});
     const [loadingMovies, setLoadingMovies] = useState(false);
+    const [err, setError] = useState(false);
+
 
     const [series, setSeries] = useState({});
     const [loadingSeries, setLoadingSeries] = useState(false);
@@ -15,6 +17,7 @@ const SearchResults = () => {
     const handleSubmit = async (e, autoInput) => {
 
         try {
+            setError(false);
             setLoadingMovies(true);
             setLoadingSeries(true);
             const [ moviesResults, seriesResults ] = await Promise.all([
@@ -22,6 +25,9 @@ const SearchResults = () => {
                     fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${e?.target?.value || autoInput}&type=series&page=1`),
             ]);
             const [moviesData, seriesData] = [await moviesResults.json(), await seriesResults.json()];
+            if(moviesData?.Response?.toLowerCase() === "false" || seriesData?.Response?.toLowerCase() === "false"){
+                throw new Error();
+            }
             setMovies((prevData) => ({...prevData, ...moviesData, page: 1}));
             setSeries((prevData) => ({...prevData, ...seriesData, page: 1}));
             setLoadingMovies(false);
@@ -29,29 +35,33 @@ const SearchResults = () => {
         } catch (error) {
             setLoadingMovies(false);
             setLoadingSeries(false);
-            console.log(error);
+            setMovies({});
+            setSeries({});
+            setError(true);
         }
     }
 
-    const handleMoviesScroll = async (e, stateItem, setStateItem, setLoading) => {
-        if( (e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
-            setLoading(true);
-            const page = stateItem.page + 1;
-            const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=movie&page=${page}`);
-            const data = await response.json();
-            console.log(data.Search);
-            setStateItem((prevData) => ({
-                ...data,
-                page: page,
-                Search: [...prevData.Search, ...data.Search]
-            }));
+    const handleScroll = async (e, stateItem, setStateItem, setLoading, category) => {
+        try{
+            if( (e.target.scrollLeft + e.target.clientWidth >= e.target.scrollWidth - 30) && (stateItem.page * 10 < Number(stateItem.totalResults))){
+                setLoading(true);
+                const page = stateItem.page + 1;
+                const response = await fetch(`https://omdbapi.com/?apikey=${process.env.REACT_APP_KEY}&s=${searchTextRef.current.value}&type=${category}&page=${page}`);
+                const data = await response.json();
+                setStateItem((prevData) => ({
+                    ...data,
+                    page: page,
+                    Search: [...prevData.Search, ...data.Search]
+                }));
+                setLoading(false);
+            }
+        } catch (error) {
             setLoading(false);
         }
-
     }
 
     useEffect(() => {
-        searchTextRef.current.value = "america";
+        searchTextRef.current.value = "game";
         handleSubmit(null, searchTextRef.current.value)
     }, []);
 
@@ -72,7 +82,7 @@ const SearchResults = () => {
                     overflowX="auto" 
                     overflowY="hidden" 
                     ref={moviesContainerRef} 
-                    onScroll={async (e) => {await handleMoviesScroll(e, movies, setMovies, setLoadingMovies)}}
+                    onScroll={async (e) => {await handleScroll(e, movies, setMovies, setLoadingMovies, "movie")}}
                     className="scroll-container"
                 >
                     {
@@ -84,6 +94,7 @@ const SearchResults = () => {
                         ))
                     }
                     { loadingMovies && <span className="loader"></span>}
+                    { err && <Text flexShrink="0" fontSize={{base: "18px", md: "24px"}} color="red">An error occured</Text>}
                 </Flex>
             </Box>
 
@@ -94,7 +105,7 @@ const SearchResults = () => {
                     mb="10px" 
                     overflowX="auto" 
                     overflowY="hidden" 
-                    onScroll={async (e) => {await handleMoviesScroll(e, series, setSeries, setLoadingSeries)}}
+                    onScroll={async (e) => {await handleScroll(e, series, setSeries, setLoadingSeries, "series")}}
                     className="scroll-container"
                 >
                     {
@@ -106,6 +117,7 @@ const SearchResults = () => {
                         ))
                     }
                     { loadingSeries && <span className="loader"></span>}
+                    { err && <Box fontSize={{base: "18px", md: "24px"}} color="red">An error occured</Box>}
                 </Flex>
             </Box>
         </Box>
